@@ -1,0 +1,77 @@
+name: DNS Monitor
+
+# 触发条件：定时任务 (cron) 和 手动触发
+on:
+  schedule:
+    # Cron 表达式：这里设置每小时运行一次 (UTC时间)
+    # 分 时 日 月 周
+    - cron: '0 * * * *'
+  workflow_dispatch: # 允许你在 GitHub 网页上手动点击运行
+
+# 设置权限，允许脚本推送到代码库
+permissions:
+  contents: write
+
+jobs:
+  check-dns:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 检出代码
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }} # 使用自带的 Token 进行提交
+
+      # 2. 配置 Git 用户信息 (必须，否则无法提交)
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+
+      # 3. 运行 DNS 查询脚本
+      - name: Query DNS Record
+        id: dns_query
+        env:
+          # 在这里修改你要监控的网址（URL），脚本会自动提取域名
+          TARGET_URL: "https://scratch.mit.edu"
+        run: |
+          # --- 脚本开始 ---
+          
+          # 1. 从 URL 中提取纯域名 (例如把 https://www.google.com 变成 www.google.com)
+          DOMAIN=$(echo "$TARGET_URL" | sed -e 's|^[^/]*//||' -e 's|/.*$||')
+          
+          # 2. 获取当前时间 (UTC)
+          TIME=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          
+          # 3. 执行 dig 命令查询 A 记录 (IPv4)
+          # +short: 只输出 IP 地址，去掉其他多余信息
+          # +noall: 不显示默认的 header 等信息
+          # +answer: 显示回答部分
+          DNS_RESULT=$(dig +short $DOMAIN A +noall +answer)
+          
+          # 如果查询结果为空，设置默认值
+          if [ -z "$DNS_RESULT" ]; then
+            DNS_RESULT="No Record Found / Timeout"
+          fi
+
+          # 4. 将结果写入日志文件 history.log
+          # 格式：时间 | 域名 | 解析结果
+          echo "$TIME | $DOMAIN | $DNS_RESULT" >> history.log
+          
+          # --- 脚本结束 ---
+          
+          # 打印结果到控制台方便查看
+          cat history.log
+          echo "Query finished."
+
+      # 4. 提交更改到 GitHub
+      - name: Commit changes
+        run: |
+          # 检查是否有文件变更
+          if [[ -n $(git status --porcelain) ]]; then
+            git add history.log
+            git commit -m "Update DNS record log"
+            git push
+          else
+            echo "No changes to commit."
+          fi
