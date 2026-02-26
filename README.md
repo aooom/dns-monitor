@@ -11,103 +11,50 @@
 在仓库中创建目录结构：.github/workflows/
 在该目录下创建一个 YAML 文件，例如 dns-check.yml。
 第二步：编写 Workflow 脚本
-将以下代码复制到 dns-check.yml 中。
+读取旧日志：在开始查询前，先读取上一次生成的日志文件（如果存在），把里面的 IP 提取出来暂存。
+生成新日志：不再使用追加模式（>>），而是创建一个新的临时文件，将本次结果写入其中。
+失败回退逻辑：如果查询失败，去暂存的旧数据里找有没有这个域名的上一次 IP，有就拿来用，没有就标记为未知。
+覆盖原文件：最后用新文件覆盖旧文件
+代码逻辑解析
+日志文件 (dns_current.log)：
 
-<YAML>
-name: DNS Monitor
-# 触发条件：定时任务 (cron) 和 手动触发
-on:
-  schedule:
-    # Cron 表达式：这里设置每小时运行一次 (UTC时间)
-    # 分 时 日 月 周
-    - cron: '0 * * * *'
-  workflow_dispatch: # 允许你在 GitHub 网页上手动点击运行
-# 设置权限，允许脚本推送到代码库
-permissions:
-  contents: write
-jobs:
-  check-dns:
-    runs-on: ubuntu-latest
-    steps:
-      # 1. 检出代码
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }} # 使用自带的 Token 进行提交
-      # 2. 配置 Git 用户信息 (必须，否则无法提交)
-      - name: Configure Git
-        run: |
-          git config --global user.name "GitHub Actions Bot"
-          git config --global user.email "actions@github.com"
-      # 3. 运行 DNS 查询脚本
-      - name: Query DNS Record
-        id: dns_query
-        env:
-          # 在这里修改你要监控的网址（URL），脚本会自动提取域名
-          TARGET_URL: "https://www.google.com"
-        run: |
-          # --- 脚本开始 ---
-          
-          # 1. 从 URL 中提取纯域名 (例如把 https://www.google.com 变成 www.google.com)
-          DOMAIN=$(echo "$TARGET_URL" | sed -e 's|^[^/]*//||' -e 's|/.*$||')
-          
-          # 2. 获取当前时间 (UTC)
-          TIME=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-          
-          # 3. 执行 dig 命令查询 A 记录 (IPv4)
-          # +short: 只输出 IP 地址，去掉其他多余信息
-          # +noall: 不显示默认的 header 等信息
-          # +answer: 显示回答部分
-          DNS_RESULT=$(dig +short $DOMAIN A +noall +answer)
-          
-          # 如果查询结果为空，设置默认值
-          if [ -z "$DNS_RESULT" ]; then
-            DNS_RESULT="No Record Found / Timeout"
-          fi
-          # 4. 将结果写入日志文件 history.log
-          # 格式：时间 | 域名 | 解析结果
-          echo "$TIME | $DOMAIN | $DNS_RESULT" >> history.log
-          
-          # --- 脚本结束 ---
-          
-          # 打印结果到控制台方便查看
-          cat history.log
-          echo "Query finished."
-      # 4. 提交更改到 GitHub
-      - name: Commit changes
-        run: |
-          # 检查是否有文件变更
-          if [[ -n $(git status --porcelain) ]]; then
-            git add history.log
-            git commit -m "Update DNS record log"
-            git push
-          else
-            echo "No changes to commit."
-          fi
-代码关键点解析
-Cron 定时 (schedule):
+文件里永远只保留最新一次的数据。
+格式严格按照你的要求：IP 域名 # 注释。
+get_old_ip 函数：
 
-- cron: '0 * * * *' 代表每小时第 0 分钟执行一次。
-注意时区：GitHub Actions 默认使用 UTC 时间。如果你需要北京时间（UTC+8）早上 8 点运行，你需要设置 UTC 时间 0 点（即 0 0 * * *）。最小间隔通常是 5 分钟。
-域名提取:
+这是核心。在生成新日志前，它利用 awk 命令去读取现有的 dns_current.log。
+它会比较每一行的第2列（$2），如果匹配当前的域名，就返回第1列（$1，即旧的IP）。
+失败处理逻辑：
 
-因为 DNS 只能解析域名（如 baidu.com），不能解析带路径的完整 URL。脚本中 sed 命令负责把 https://www.baidu.com/s?wd=test 处理成 www.baidu.com。
-dig 命令:
+如果 dig 查不到 IP：
+先调用 get_old_ip。
+如果拿到了旧 IP，就输出 1.2.3.4 example.com # Timeout。
+如果从来没查到过这个域名（旧日志里也没有），就输出 Unknown example.com # Timeout，保证日志格式的一致性。
+临时文件 (dns_current.tmp)：
 
-dig +short $DOMAIN A：这是最核心的命令。
-A 代表查询 IPv4 地址。如果你想查询 IPv6，可以改成 AAAA；查询 CNAME（别名），可以改成 CNAME。
-自动提交:
+我们先往 .tmp 文件里写，写完了再把 .tmp 改名为 .log。这样做是为了防止万一脚本中途出错，导致原来的日志文件被清空或损坏。
+预期效果
+运行后，你的仓库根目录下的 dns_current.log 内容将会是这样的：
 
-为了让机器人能提交代码，我们需要 permissions: contents: write。
-使用了 git status --porcelain 来检查是否有变化，如果 DNS 记录没变（且之前没跑过），就不会触发无效的 commit。
-第三步：如何使用
-将上述文件保存并推送到 GitHub。
-你可以点击仓库上方的 Actions 标签页。
-找到 "DNS Monitor" workflow，点击右侧的 "Run workflow" 按钮进行第一次手动测试。
-测试成功后，代码库根目录下会出现一个 history.log 文件。
-之后，它会根据你设定的时间自动运行并更新这个文件。
-进阶玩法：查询多条记录并发送通知
-如果你需要监控多个网址，或者希望解析结果发生变化时发送邮件/钉钉通知，可以修改脚本逻辑：
+情况 A：正常解析
+
+<TEXT>
+142.250.183.36 www.google.com
+140.82.113.4 github.com
+13.107.21.200 bing.com
+情况 B：某次查询 bing.com 超时
+(它保留了上一次解析到的 IP 13.107.21.200 并添加了注释)
+
+<TEXT>
+142.250.183.36 www.google.com
+140.82.113.4 github.com
+13.107.21.200 bing.com # Timeout
+情况 C：从未解析成功过的新域名超时
+
+<TEXT>
+Unknown fake-site.com # Timeout (No History)
+
+希望解析结果发生变化时发送邮件/钉钉通知，可以修改脚本逻辑：
 
 <BASH>
 # 示例：简单的变化检测
