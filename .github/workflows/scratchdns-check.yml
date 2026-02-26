@@ -67,7 +67,7 @@ jobs:
             # +short: 只返回IP
             # +time=3: 超时时间3秒
             # +tries=1: 只尝试一次，失败快速返回
-            NEW_IP=$(dig +short "$DOMAIN" A +time=3 +tries=1 2>/dev/null)
+            NEW_IP=$(dig +short "$DOMAIN" A +time=3 +tries=1 2>/dev/null | xargs fping -c 3 -t 100 2>&1 | grep "min/avg/max" | awk '{print $1,$NF}' | sort -k2n | head -1 | awk '{print $1}')
 
             # --- 判断结果 ---
             if [ -n "$NEW_IP" ]; then
