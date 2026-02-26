@@ -1,11 +1,6 @@
-# Latest DNS Status - Updated: 2026-02-26 14:54:52 UTC
+# Latest DNS Status - Updated: 2026-02-26 15:18:54 UTC
 # Format: IP Domain # Optional Comment
-106.38.252.224
-111.202.87.112 syr.samr.gov.cn
-151.101.194.133
-151.101.66.133
-151.101.130.133
-151.101.2.133 scratch.mit.edu
-104.20.29.157
-172.66.165.60 vivaldi.com
-31.209.137.10 bifrost.vivaldi.com
+111.202.87.112 syr.samr.gov.cn # Timeout
+151.101.2.133 scratch.mit.edu # Timeout
+172.66.165.60 vivaldi.com # Timeout
+31.209.137.10 bifrost.vivaldi.com # Timeout
