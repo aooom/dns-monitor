@@ -33,11 +33,9 @@ jobs:
           TMP_LOG="dns_current.tmp"
           
           # --- 函数：获取某个域名的上一次IP ---
-          # 从旧的日志文件中查找对应的IP
           function get_old_ip() {
             local domain=$1
-            # 使用 awk 精确匹配第2列（域名），返回第1列（IP）
-            # 2>/dev/null 防止文件不存在报错
+            # 从旧日志查找对应域名的IP (精确匹配第2列)
             awk -v d="$domain" '$2 == d {print $1}' "$LOG_FILE" 2>/dev/null | head -n 1
           }
 
@@ -47,7 +45,6 @@ jobs:
           echo "# Latest DNS Status - Updated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" > "$TMP_LOG"
           echo "# Format: IP Domain # Optional Comment" >> "$TMP_LOG"
           
-          # 检查 urls.txt 是否存在
           if [ ! -f "urls.txt" ]; then
             echo "Error: urls.txt not found!"
             exit 1
@@ -64,33 +61,31 @@ jobs:
             DOMAIN=$(echo "$line" | sed -e 's|^[^/]*//||' -e 's|/.*$||')
             
             # 查询 DNS (A记录)
-            # +short: 只返回IP
-            # +time=3: 超时时间3秒
-            # +tries=1: 只尝试一次，失败快速返回
-            NEW_IP=$(dig +short "$DOMAIN" A +time=3 +tries=1 2>/dev/null | xargs fping -c 3 -t 100 2>&1 | grep "min/avg/max" | awk '{print $1,$NF}' | sort -k2n | head -1 | awk '{print $1}')
+            # --- 核心修改在这里 ---
+            # 新增了: | head -n 1
+            # 作用: 无论 dig 返回多少个 IP，只取第一个
+            NEW_IP=$(dig +short "$DOMAIN" A +time=3 +tries=1 2>/dev/null | head -n 1)
 
             # --- 判断结果 ---
             if [ -n "$NEW_IP" ]; then
               # 1. 查询成功：写入 "IP 域名"
               echo "$NEW_IP $DOMAIN" >> "$TMP_LOG"
             else
-              # 2. 查询失败：
-              # 尝试获取上一次的 IP
+              # 2. 查询失败：尝试获取上一次的 IP
               OLD_IP=$(get_old_ip "$DOMAIN")
               
               if [ -n "$OLD_IP" ]; then
                 # 有历史记录：写入 "旧IP 域名 # Timeout"
                 echo "$OLD_IP $DOMAIN # Timeout" >> "$TMP_LOG"
               else
-                # 无历史记录（从未成功过）：标记为 Unknown
+                # 无历史记录：标记为 Unknown
                 echo "Unknown $DOMAIN # Timeout (No History)" >> "$TMP_LOG"
               fi
             fi
 
           done < "urls.txt"
 
-          # --- 覆盖旧日志 ---
-          # 用生成好的临时文件覆盖原来的日志文件
+          # 覆盖旧日志
           mv "$TMP_LOG" "$LOG_FILE"
           
           # 输出结果预览
@@ -100,8 +95,6 @@ jobs:
       # 4. 提交更改
       - name: Commit changes
         run: |
-          # 即使内容没有变化，我们也可以强制提交更新时间戳（如果需要的话）
-          # 这里只在文件变化时提交
           if [[ -n $(git status --porcelain) ]]; then
             git add dns_current.log
             git commit -m "Update latest DNS snapshot"
