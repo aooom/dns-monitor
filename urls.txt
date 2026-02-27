@@ -2,3 +2,8 @@ syr.samr.gov.cn
 scratch.mit.edu
 vivaldi.com
 bifrost.vivaldi.com
+aurorastore.org
+tavily.com
+create.codelab.club
+turbowarp.org
+mail.ru
