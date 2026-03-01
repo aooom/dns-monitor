@@ -1,4 +1,4 @@
-使用 GitHub Actions 定时爬取任意网址（域名）的 DNS 解析记录是一个非常实用的自动化需求。我们可以利用 Linux 自带的 `dig` 命令来完成查询，并结合 GitHub Actions 的 `schedule` 功能实现定时触发，最后将结果提交回仓库保存历史记录。
+使用 GitHub Actions 定时爬取任意网址（域名）的 DNS 解析记录，并生成Hosts文件格式，是一个非常实用的自动化需求。我们可以利用 Linux 自带的 `dig` 命令来完成查询，并结合 GitHub Actions 的 `schedule` 功能实现定时触发，最后将结果提交回仓库保存历史记录。
 
 以下是完整的操作步骤和代码实现。
 
@@ -231,7 +231,6 @@ jobs:
 ```bash
 # 示例：简单的变化检测
 # 假设上次的结果存在 last_ip.txt
-CURRENT_IP=$(dig +short example.com A +noall +answer | head -n 1)
 
 if [ "$CURRENT_IP" != "$(cat last_ip.txt 2>/dev/null)" ]; then
   echo "IP Changed! New IP: $CURRENT_IP"
@@ -242,3 +241,6 @@ fi
 ```
 
 这个方案无需任何服务器，完全依托于 GitHub 的免费资源，非常适合个人开发者做长期监控。
+
+
+Hosts管理,推荐用SwitchHosts一键切换，SwitchHosts 的 官网(https://switchhosts.vercel.app/ ) 或 Github仓库(https://github.com/oldj/SwitchHosts ) ,下载对应系统版本的安装包
