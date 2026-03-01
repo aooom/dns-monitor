@@ -1,11 +1,11 @@
-# Latest DNS Status - Updated: 2026-03-01 22:32:11 UTC
+# Latest DNS Status - Updated: 2026-03-01 23:31:24 UTC
 # Format: IP Domain # Optional Comment
-106.38.252.224 syr.samr.gov.cn
+111.202.87.112 syr.samr.gov.cn
 151.101.130.133 scratch.mit.edu
 104.20.29.157 vivaldi.com
 31.209.137.10 bifrost.vivaldi.com
-104.21.74.57 aurorastore.org
-54.192.55.120 tavily.com
+172.67.167.250 aurorastore.org
+18.155.202.55 tavily.com
 39.108.54.56 create.codelab.club
-104.21.25.190 turbowarp.org
-185.180.201.1 mail.ru
+;; communications error to 127.0.0.53#53: timed out turbowarp.org
+90.156.232.4 mail.ru
