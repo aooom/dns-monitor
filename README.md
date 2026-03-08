@@ -137,7 +137,7 @@ jobs:
       - name: Query DNS and Update Log
         run: |
           # 定义文件名
-          LOG_FILE="dns_current.log"
+          LOG_FILE="current_hosts"
           TMP_LOG="dns_current.tmp"
         
           # --- 函数：获取某个域名的上一次IP ---
@@ -204,7 +204,7 @@ jobs:
       - name: Commit changes
         run: |
           if [[ -n $(git status --porcelain) ]]; then
-            git add dns_current.log
+            git add current_hosts
             git commit -m "Update latest DNS snapshot"
             git push
           else
