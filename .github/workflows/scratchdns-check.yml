@@ -96,7 +96,7 @@ jobs:
       - name: Commit changes
         run: |
           if [[ -n $(git status --porcelain) ]]; then
-            git add dns_current.log
+            git add current_hosts
             git commit -m "Update latest DNS snapshot"
             git push
           else
