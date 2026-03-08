@@ -29,7 +29,7 @@ jobs:
       - name: Query DNS and Update Log
         run: |
           # 定义文件名
-          LOG_FILE="dns_current.log"
+          LOG_FILE="current_hosts"
           TMP_LOG="dns_current.tmp"
           
           # --- 函数：获取某个域名的上一次IP ---
