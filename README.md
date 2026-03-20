@@ -241,6 +241,6 @@ fi
 ```
 
 这个方案无需任何服务器，完全依托于 GitHub 的免费资源，非常适合个人开发者做长期监控。
-
+欢迎fork https://github.com/aooom/dns-monitor
 
 Hosts管理,推荐用SwitchHosts一键切换，SwitchHosts 的 官网(https://switchhosts.vercel.app/ ) 或 Github仓库(https://github.com/oldj/SwitchHosts ) ,下载对应系统版本的安装包
