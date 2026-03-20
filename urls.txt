@@ -8,6 +8,7 @@ create.codelab.club
 turbowarp.org
 mail.ru
 developer.android.com
+integrate.api.nvidia.com
 alive.github.com
 api.github.com
 api.individual.githubcopilot.com
