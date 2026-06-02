@@ -9,7 +9,6 @@ create.codelab.club
 turbowarp.org
 mail.ru
 integrate.api.nvidia.com
-alive.github.com
 api.github.com
 avatars.githubusercontent.com
 avatars0.githubusercontent.com
