@@ -1,3 +1,4 @@
+api.cloudflare.com
 syr.samr.gov.cn
 scratch.mit.edu
 vivaldi.com
